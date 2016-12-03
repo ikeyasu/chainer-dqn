@@ -321,10 +321,13 @@ class CoinGetter(Game):
     def detect_position(self, screen = None):
         if screen is None:
             screen = ag.screenshot()
-        for img in ['left_top', 'title']:
+        for img, offset in [('left_top', (0, 0)), ('title', (153, 49))]:
             position = self.find_image(screen, self.images[img])
             if position is not None:
                 x, y = position
+                ox, oy = offset
+                x -= ox
+                y -= oy
                 self.set_position(x, y)
                 return x, y
         return None
@@ -463,8 +466,8 @@ if __name__ == '__main__':
     def main(img_dir):
         game = CoinGetter()
         game.load_images(img_dir)
-        game.detect_position()
+        print game.detect_position()
         screen = ag.screenshot()
-        print game._process_play(screen)
+        #print game._process_play(screen)
 
-    main('../image')
+    main('../image_coingetter')

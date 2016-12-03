@@ -9,6 +9,7 @@
 
 $ brew install tesseract --all-languages
 $ pip install pyocr
+$ sudo apt-get install tesseract-ocr tesseract-ocr-eng
 
 # Supported Game
 
