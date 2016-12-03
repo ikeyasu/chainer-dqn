@@ -5,10 +5,15 @@
 * [Chainer](http://chainer.org/)
 * [PyAutoGUI](https://pyautogui.readthedocs.org/en/latest/)
 * [PyQt4](https://riverbankcomputing.com/software/pyqt/intro)
+* [tesseract](https://github.com/tesseract-ocr/tesseract)
+
+$ brew install tesseract --all-languages
+$ pip install pyocr
 
 # Supported Game
 
 * [Winnie the Pooh's Home Run Derby](http://games.kids.yahoo.co.jp/sports/013.html)
+* [Coin Getter](http://games.kids.yahoo.co.jp/action/016.html)
 
 # Usage
 

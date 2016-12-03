@@ -1,11 +1,10 @@
 import argparse
 import time
 import thread
-import os
 import random
 import numpy as np
 import pyautogui as ag
-from game import PoohHomerun
+from game import PoohHomerun, CoinGetter
 from net import Q
 import chainer
 from chainer import functions as F
@@ -48,14 +47,16 @@ parser.add_argument('--update_target_interval', default=2000, type=int,
                     help='interval to update target Q function of Double DQN')
 parser.add_argument('--only_result', action='store_true',
                     help='use only reward to evaluate')
+parser.add_argument('--game', default='homerun', type=str,
+                    help='game. homerun or coingetter')
 args = parser.parse_args()
 
 interval = args.interval / 1000.0
 only_result = args.only_result
 use_double_dqn = args.double_dqn
 update_target_interval = args.update_target_interval
-game = PoohHomerun()
-game.load_images('image')
+game = CoinGetter() if args.game == 'coingetter' else PoohHomerun()
+game.load_images('image_coingetter' if args.game == 'coingetter' else 'image')
 if game.detect_position() is None:
     print "Error: cannot detect game screen position."
     exit()
@@ -178,6 +179,7 @@ if __name__ == '__main__':
             bits.setsize(image.byteCount())
             screen = Image.fromarray(np.array(bits).reshape((h, w, 4))[:,:,2::-1])
             reward, terminal = game.process(screen)
+            print "reward={}, terminal={}".format(reward, terminal)
             if reward is not None:
                 train_image = xp.asarray(screen.resize((train_width, train_height))).astype(np.float32).transpose((2, 0, 1))
                 train_image = Variable(train_image.reshape((1,) + train_image.shape) / 127.5 - 1, volatile=True)
@@ -220,7 +222,7 @@ if __name__ == '__main__':
                     save_count += 1
             current_clock = time.clock()
             wait = next_clock - current_clock
-            print 'wait: ', wait
+            #print 'wait: ', wait
             if wait > 0:
                 next_clock += interval
                 time.sleep(wait)
