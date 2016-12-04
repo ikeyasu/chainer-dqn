@@ -278,7 +278,7 @@ class CoinGetter(Game):
         self.random_prev_pos = 0
         self.random_count = 0
         self.adjust_state_count = 0
-        self.prev_coin = -1
+        self.prev_coin = None
         self.level = 1
 
         tools = pyocr.get_available_tools()
@@ -312,8 +312,12 @@ class CoinGetter(Game):
         )
         return int(txt)
 
-    def get_num_of_coin(self, screen):
-        return self.get_number(screen, 'coin', (15, 0), (60, 20))
+    def get_coin_image(self, screen):
+        position = self.find_image(screen, self.images['coin'], 144, 415, 152, 27)
+        if position is None:
+            return None
+        x, y = position
+        return screen.crop((x, y, x + 60, y + 20))
 
     def get_level(self, screen):
         return self.get_number(screen, 'level', (15, 0), (60, 20))
@@ -333,15 +337,15 @@ class CoinGetter(Game):
         return None
 
     def adjust_state(self, screen):
-        position = self.find_image(screen, self.images['start'])
+        position = self.find_image(screen, self.images['start'], 213, 382, 138, 44)
         if position is not None:
             self.state = self.STATE_TITLE
             return self.state
-        position = self.find_image(screen, self.images['restart'])
+        position = self.find_image_center(screen, self.images['restart'], 263, 255, 128, 44)
         if position is not None:
             self.state = self.STATE_RESULT
             return self.state
-        position = self.find_image(screen, self.images['left_top'])
+        position = self.find_image(screen, self.images['left_top'], 0, 0, 100, 100)
         if position is not None:
             self.state = self.STATE_PLAY
             return self.state
@@ -351,7 +355,7 @@ class CoinGetter(Game):
         self.adjust_state_count -= 1
         if self.adjust_state_count <= 0:
             self.adjust_state(screen)
-            self.adjust_state_count = 200
+            self.adjust_state_count = 10
 
         if self.state == self.STATE_TITLE:
             return self._process_title(screen)
@@ -393,22 +397,9 @@ class CoinGetter(Game):
         self.random_prev_pos = prev_pos
         return action
 
-    def move_to(self, x, y, direct=False):
-        if not direct:
-            return super(CoinGetter, self).move_to(x, y)
-        # no use self.x and self.y
-        ag.moveTo(x, y)
-
-    def find_image_center(self, screen, image, x=0, y=0, w=None, h=None):
-        x = self.x if x == 0 else x
-        y = self.y if y == 0 else y
-        w = self.WIDTH if w == 0 else w
-        h = self.HEIGHT if h == 0 else h
-        return super(CoinGetter, self).find_image_center(screen, image, x, y, w, h)
-
     def _process_title(self, screen):
         print "process: TITLE"
-        self.move_to(self.x, self.y)
+        self.move_to(0, 0)
         self.click()
         time.sleep(0.1)
         position = self.find_image_center(screen, self.images['start'])
@@ -417,34 +408,35 @@ class CoinGetter(Game):
             self.move_to(x, y)
             time.sleep(0.1)
             self.click()
+            self.move_to(0, 0)
             self.state = self.STATE_PLAY
         return (None, False)
 
     def _process_play(self, screen):
-        print "process: PLAY"
-        position = self.find_image_center(screen, self.images['game_over'])
-        if position is None:
-            position = self.find_image_center(screen, self.images['restart'])
+        print "process: PLAY",
+        #position = self.find_image_center(screen, self.images['game_over'])
+        #if position is None:
+        #screen.save('screen.png', 'PNG')
+        position = self.find_image_center(screen, self.images['restart'], 263, 255, 128, 44)
         if position is not None:
             time.sleep(5)
             self.state = self.STATE_RESULT
             return -100, True
-        position = self.find_image_center(screen, self.images['levelup'])
-        if position is not None:
-            time.sleep(3)
-            self.state = self.STATE_RESULT
-            return 1000, True
-        level = self.get_level(screen)
-        if level != self.level:
-            self.level = level
-            return 1000, True
-        coin = self.get_num_of_coin(screen)
-        if coin is not None:
-            termination = (self.prev_coin != coin)
-            reward = 100 if termination else -1
-            self.prev_coin = coin
-            return reward, termination
-        return 0, False
+        #position = self.find_image_center(screen, self.images['levelup'])
+        #if position is not None:
+        #    time.sleep(3)
+        #    self.state = self.STATE_RESULT
+        #    return 1000, True
+        #level = self.get_level(screen)
+        #if level != self.level:
+        #    self.level = level
+        #    return 1000, True
+        coin = self.get_coin_image(screen)
+        termination = (self.prev_coin != coin)
+        reward = 100 if termination else -1
+        self.prev_coin = coin
+        time.sleep(1)
+        return reward, termination
 
     def _process_result(self, screen):
         print "process: RESULT"
@@ -454,8 +446,9 @@ class CoinGetter(Game):
         if position != None:
             x, y = position
             self.move_to(x, y)
-            time.sleep(0.1)
+            time.sleep(0.5)
             self.click()
+            time.sleep(0.1)
             self.move_to(0, 0)
             self.state = self.STATE_PLAY
         return (None, False)
@@ -463,11 +456,28 @@ class CoinGetter(Game):
 
 if __name__ == '__main__':
     #test
+    from PyQt4.QtGui import QPixmap, QApplication
+    import sys
+
+
     def main(img_dir):
         game = CoinGetter()
         game.load_images(img_dir)
-        print game.detect_position()
-        screen = ag.screenshot()
+        game.detect_position()
+
+        app = QApplication(sys.argv)
+        window_id = app.desktop().winId()
+        left, top, w, h = game.region()
+        pixmap = QPixmap.grabWindow(window_id, left, top, w, h)
+        image = pixmap.toImage()
+        bits = image.bits()
+        bits.setsize(image.byteCount())
+        screen = Image.fromarray(np.array(bits).reshape((h, w, 4))[:,:,2::-1])
+
         #print game._process_play(screen)
+        #coin = game.get_coin_image(screen)
+        #coin.save('coin.png', 'PNG')
+        #print game._process_result(screen)
+        print game.adjust_state(screen)
 
     main('../image_coingetter')

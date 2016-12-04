@@ -151,14 +151,14 @@ def train():
             loss.unchain_backward()
             optimizer.update()
             batch_index = next_batch_index
-            print "loss", float(cuda.to_cpu(loss.data))
+            #print "loss", float(cuda.to_cpu(loss.data))
             clock = time.clock()
-            print "train", clock - last_clock
+            #print "train", clock - last_clock
             last_clock = clock
             if use_double_dqn:
                 update_target_iteration += 1
         current_term_size = min(current_term_size * term_increase_rate, max_term_size)
-        print "current_term_size ", current_term_size
+        #print "current_term_size ", current_term_size
 
 if __name__ == '__main__':
     try:
@@ -187,13 +187,13 @@ if __name__ == '__main__':
 
                 best = int(np.argmax(score.data))
                 action = game.randomize_action(best, random_probability)
-                print action, float(score.data[0][action]), best, float(score.data[0][best]), reward
+                #print action, float(score.data[0][action]), best, float(score.data[0][best]), reward
                 index = frame % POOL_SIZE
                 state_pool[index] = cuda.to_cpu(train_image.data)
                 action_pool[index] = action
                 reward_pool[index - 1] = reward
                 average_reward = average_reward * 0.9999 + reward * 0.0001
-                print "average reward: ", average_reward
+                #print "average reward: ", average_reward
                 if terminal:
                     terminal_pool[index - 1] = 1
                     if only_result:
