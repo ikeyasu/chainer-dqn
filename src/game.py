@@ -398,7 +398,7 @@ class CoinGetter(Game):
 
     def _process_title(self, screen):
         logging.info("process: TITLE")
-        self.move_to(0, 0)
+        self.move_to(100, 100)
         self.click()
         time.sleep(0.1)
         position = self.find_image_center(screen, self.images['start'], 213, 382, 138, 44, blackwhite=100)
