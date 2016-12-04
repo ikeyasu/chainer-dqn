@@ -268,11 +268,9 @@ class CoinGetter(Game):
     STATE_RESULT = 2
     WIDTH = 550
     HEIGHT = 447
-    KEY_PRESSED_DURATION = 0.5
-    # 0: do nothing
-    # 1: up, 2: right, 3: down, 4: left
-    # pressed_duration is divided by KEY_RRESSED_DURATION
-    ACTIONS = np.array([(key, pressed_duration) for key in [0, 1, 2, 3, 4] for pressed_duration in [1, 2]],
+    # key: 0=do nothing, 1=up, 2=right, 3=down, 4=left
+    # updown: 0=down, 1=up
+    ACTIONS = np.array([(key, pressed_duration) for key in [0, 1, 2, 3, 4] for pressed_duration in [0, 1]],
                        dtype=np.int)
     KEYS = [None, 'up', 'right', 'down', 'left']
 
@@ -280,10 +278,10 @@ class CoinGetter(Game):
         super(CoinGetter, self).__init__(self.WIDTH, self.HEIGHT)
         self.state = self.STATE_TITLE
         self.images = {}
-        self.random_prev_pos = 0
         self.random_count = 0
         self.adjust_state_count = 0
         self.prev_coin = None
+        self.prev_key = None
         self.level = 1
 
         tools = pyocr.get_available_tools()
@@ -372,34 +370,24 @@ class CoinGetter(Game):
     def action_size(self):
         return len(self.ACTIONS)
 
+    def keyup_all(self):
+        for key in self.KEYS[1:]:
+            ag.keyUp(key)
+
     def play(self, action):
-        key, pressed_duration = self.ACTIONS[action]
+        key, updown = self.ACTIONS[action]
         key = self.KEYS[key]
         if key is None:
             return
-        pressed_duration = float(pressed_duration) * self.KEY_PRESSED_DURATION
-        print "ACTION: {}, {}sec".format(key, str(pressed_duration))
-        ag.keyDown(key)
-        time.sleep(pressed_duration)
-        ag.keyUp(key)
+        print "ACTION: {}, {}".format(key, "DOWN" if updown == 0 else "UP")
+        if self.prev_key != key and self.prev_key is not None:
+            ag.keyUp(self.prev_key)
+        self.prev_key = key
+        ag.keyDown(key) if updown == 0 else ag.keyUp(key)
 
     def randomize_action(self, action, random_probability):
-        prev_pos = self.random_prev_pos
-        pos_size = self.action_size() // 2
-        if random.random() * 15 < random_probability:
-            self.random_count += random.randint(1, 29)
-            prev_pos = random.randint(0, pos_size - 1)
-        if self.random_count > 0:
-            self.random_count -= 1
-            pos = prev_pos
-            button = random.randint(0, 1)
-            if pos < 0:
-                pos = 0
-            elif pos >= pos_size - 1:
-                pos = pos_size - 1
-            action = pos * 2 + button
-            prev_pos += random.randint(-5, 5)
-        self.random_prev_pos = prev_pos
+        if random.random() < random_probability:
+            return random.randint(0, self.action_size() - 1)
         return action
 
     def _process_title(self, screen):
@@ -440,11 +428,11 @@ class CoinGetter(Game):
         termination = (self.prev_coin != coin)
         reward = 100 if termination else -1
         self.prev_coin = coin
-        time.sleep(1)
         return reward, termination
 
     def _process_result(self, screen):
         print "process: RESULT"
+        self.keyup_all()
         self.move_to(0, 0)
         time.sleep(0.1)
         position = self.find_image_center(screen, self.images['restart'], 263, 255, 128, 44, blackwhite=100)
