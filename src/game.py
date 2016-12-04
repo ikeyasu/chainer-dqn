@@ -342,14 +342,17 @@ class CoinGetter(Game):
     def adjust_state(self, screen):
         position = self.find_image(screen, self.images['start'], 213, 382, 138, 44, blackwhite=100)
         if position is not None:
+            print 'adjust to TITLE'
             self.state = self.STATE_TITLE
             return self.state
         position = self.find_image_center(screen, self.images['restart'], 263, 255, 128, 44, blackwhite=100)
         if position is not None:
+            print 'adjust to RESULT'
             self.state = self.STATE_RESULT
             return self.state
         position = self.find_image(screen, self.images['left_top'], 0, 0, 100, 100)
         if position is not None:
+            print 'adjust to PLAY'
             self.state = self.STATE_PLAY
             return self.state
         return None
@@ -380,7 +383,7 @@ class CoinGetter(Game):
         key = self.KEYS[key]
         if key is None:
             return
-        print "ACTION: {}, {}".format(key, "DOWN" if updown == 0 else "UP")
+        #print "ACTION: {}, {}".format(key, "DOWN" if updown == 0 else "UP")
         if self.prev_key != key and self.prev_key is not None:
             ag.keyUp(self.prev_key)
         self.prev_key = key
@@ -403,11 +406,11 @@ class CoinGetter(Game):
             time.sleep(0.1)
             self.click()
             self.move_to(0, 0)
-            self.adjust_state_count -= 1
+        self.adjust_state_count = -1
         return None, False
 
     def _process_play(self, screen):
-        print "process: PLAY",
+        #print "process: PLAY",
         #position = self.find_image_center(screen, self.images['game_over'])
         #if position is None:
         #screen.save('screen.png', 'PNG')
@@ -445,7 +448,7 @@ class CoinGetter(Game):
             self.click()
             time.sleep(0.1)
             self.move_to(0, 0)
-            self.adjust_state_count -= 1
+        self.adjust_state_count = -1
         return None, False
 
 

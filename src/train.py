@@ -179,7 +179,7 @@ if __name__ == '__main__':
             bits.setsize(image.byteCount())
             screen = Image.fromarray(np.array(bits).reshape((h, w, 4))[:,:,2::-1])
             reward, terminal = game.process(screen)
-            print "reward={}, terminal={}".format(reward, terminal)
+            #print "reward={}, terminal={}".format(reward, terminal)
             if reward is not None:
                 train_image = xp.asarray(screen.resize((train_width, train_height))).astype(np.float32).transpose((2, 0, 1))
                 train_image = Variable(train_image.reshape((1,) + train_image.shape) / 127.5 - 1, volatile=True)
@@ -209,6 +209,7 @@ if __name__ == '__main__':
                     terminal_pool[index - 1] = 0
                 frame += 1
                 save_iter -= 1
+                #print 'save_iter: {0}'.format(save_iter)
                 random_probability *= random_reduction_rate
                 if random_probability < min_random_probability:
                     random_probability = min_random_probability
@@ -222,9 +223,9 @@ if __name__ == '__main__':
                     save_count += 1
             current_clock = time.clock()
             wait = next_clock - current_clock
-            #print 'wait: ', wait
             if wait > 0:
                 next_clock += interval
+                #print 'wait: ', wait
                 time.sleep(wait)
             elif wait > -interval / 2:
                 next_clock += interval
