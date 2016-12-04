@@ -5,6 +5,8 @@ import numpy as np
 import pyocr
 from PIL import Image, ImageOps
 import pyautogui as ag
+import logging
+
 
 class Game(object):
     def __init__(self, width, height):
@@ -286,7 +288,7 @@ class CoinGetter(Game):
 
         tools = pyocr.get_available_tools()
         if len(tools) == 0:
-            print("No OCR tool found")
+            logging.critical("No OCR tool found")
             return
         # The tools are returned in the recommended order of usage
         self.ocr_tool = tools[0]
@@ -342,17 +344,17 @@ class CoinGetter(Game):
     def adjust_state(self, screen):
         position = self.find_image(screen, self.images['start'], 213, 382, 138, 44, blackwhite=100)
         if position is not None:
-            print 'adjust to TITLE'
+            logging.debug('adjust to TITLE')
             self.state = self.STATE_TITLE
             return self.state
         position = self.find_image_center(screen, self.images['restart'], 263, 255, 128, 44, blackwhite=100)
         if position is not None:
-            print 'adjust to RESULT'
+            logging.debug('adjust to RESULT')
             self.state = self.STATE_RESULT
             return self.state
         position = self.find_image(screen, self.images['left_top'], 0, 0, 100, 100)
         if position is not None:
-            print 'adjust to PLAY'
+            logging.debug('adjust to PLAY')
             self.state = self.STATE_PLAY
             return self.state
         return None
@@ -383,7 +385,7 @@ class CoinGetter(Game):
         key = self.KEYS[key]
         if key is None:
             return
-        #print "ACTION: {}, {}".format(key, "DOWN" if updown == 0 else "UP")
+        logging.debug("ACTION: {}, {}".format(key, "DOWN" if updown == 0 else "UP"))
         if self.prev_key != key and self.prev_key is not None:
             ag.keyUp(self.prev_key)
         self.prev_key = key
@@ -395,7 +397,7 @@ class CoinGetter(Game):
         return action
 
     def _process_title(self, screen):
-        print "process: TITLE"
+        logging.info("process: TITLE")
         self.move_to(0, 0)
         self.click()
         time.sleep(0.1)
@@ -410,7 +412,7 @@ class CoinGetter(Game):
         return None, False
 
     def _process_play(self, screen):
-        #print "process: PLAY",
+        logging.debug("process: PLAY")
         #position = self.find_image_center(screen, self.images['game_over'])
         #if position is None:
         #screen.save('screen.png', 'PNG')
@@ -435,7 +437,7 @@ class CoinGetter(Game):
         return reward, termination
 
     def _process_result(self, screen):
-        print "process: RESULT"
+        logging.info("process: RESULT")
         self.keyup_all()
         self.move_to(0, 0)
         time.sleep(0.1)

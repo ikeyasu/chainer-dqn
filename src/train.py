@@ -1,3 +1,5 @@
+import logging
+
 import argparse
 import time
 import thread
@@ -49,7 +51,12 @@ parser.add_argument('--only_result', action='store_true',
                     help='use only reward to evaluate')
 parser.add_argument('--game', default='homerun', type=str,
                     help='game. homerun or coingetter')
+parser.add_argument('--log', default=20, type=int,
+                    help='20 or 10')
 args = parser.parse_args()
+
+logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s',
+                        level=args.log)
 
 interval = args.interval / 1000.0
 only_result = args.only_result
@@ -58,7 +65,7 @@ update_target_interval = args.update_target_interval
 game = CoinGetter() if args.game == 'coingetter' else PoohHomerun()
 game.load_images('image_coingetter' if args.game == 'coingetter' else 'image')
 if game.detect_position() is None:
-    print "Error: cannot detect game screen position."
+    logging.critical("Error: cannot detect game screen position.")
     exit()
 left, top, w, h = game.region()
 train_width = w / 4
@@ -151,14 +158,14 @@ def train():
             loss.unchain_backward()
             optimizer.update()
             batch_index = next_batch_index
-            #print "loss", float(cuda.to_cpu(loss.data))
+            logging.debug("loss", float(cuda.to_cpu(loss.data)))
             clock = time.clock()
-            #print "train", clock - last_clock
+            logging.debug("train", clock - last_clock)
             last_clock = clock
             if use_double_dqn:
                 update_target_iteration += 1
         current_term_size = min(current_term_size * term_increase_rate, max_term_size)
-        #print "current_term_size ", current_term_size
+        logging.debug("current_term_size ", current_term_size)
 
 if __name__ == '__main__':
     try:
@@ -179,7 +186,7 @@ if __name__ == '__main__':
             bits.setsize(image.byteCount())
             screen = Image.fromarray(np.array(bits).reshape((h, w, 4))[:,:,2::-1])
             reward, terminal = game.process(screen)
-            #print "reward={}, terminal={}".format(reward, terminal)
+            logging.debug("reward={}, terminal={}".format(reward, terminal))
             if reward is not None:
                 train_image = xp.asarray(screen.resize((train_width, train_height))).astype(np.float32).transpose((2, 0, 1))
                 train_image = Variable(train_image.reshape((1,) + train_image.shape) / 127.5 - 1, volatile=True)
@@ -193,7 +200,7 @@ if __name__ == '__main__':
                 action_pool[index] = action
                 reward_pool[index - 1] = reward
                 average_reward = average_reward * 0.9999 + reward * 0.0001
-                #print "average reward: ", average_reward
+                logging.debug("average reward: ", average_reward)
                 if terminal:
                     terminal_pool[index - 1] = 1
                     if only_result:
@@ -209,14 +216,13 @@ if __name__ == '__main__':
                     terminal_pool[index - 1] = 0
                 frame += 1
                 save_iter -= 1
-                #print 'save_iter: {0}'.format(save_iter)
                 random_probability *= random_reduction_rate
                 if random_probability < min_random_probability:
                     random_probability = min_random_probability
             else:
                 action = None
                 if save_iter <= 0:
-                    print 'save: ', save_count
+                    logging.info('save: ', save_count)
                     serializers.save_hdf5('{0}_{1:03d}.model'.format(args.output, save_count), q)
                     serializers.save_hdf5('{0}_{1:03d}.state'.format(args.output, save_count), optimizer)
                     save_iter = 10000
@@ -225,7 +231,7 @@ if __name__ == '__main__':
             wait = next_clock - current_clock
             if wait > 0:
                 next_clock += interval
-                #print 'wait: ', wait
+                logging.debug('wait: ', wait)
                 time.sleep(wait)
             elif wait > -interval / 2:
                 next_clock += interval
