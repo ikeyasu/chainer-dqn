@@ -40,7 +40,7 @@ class Game(object):
             return random.randint(0, self.action_size() - 1)
         return action
 
-    def find_image(self, screen, image, x=0, y=0, w=None, h=None, center=False):
+    def find_image(self, screen, image, x=0, y=0, w=None, h=None, center=False, blackwhite=-1):
         if w is None:
             right = screen.width
         else:
@@ -50,6 +50,11 @@ class Game(object):
         else:
             bottom = y + h
         cropped = screen.crop((x, y, right, bottom))
+        if blackwhite >= 0:
+            cropped = ImageOps.grayscale(cropped).point(lambda x: 0 if x < blackwhite else 255)
+            image = ImageOps.grayscale(image).point(lambda x: 0 if x < blackwhite else 255)
+            #cropped.save('cropped.png', 'PNG')
+            #image.save('image.png', 'PNG')
         position = ag.locate(image, cropped)
         if position != None:
             if center:
@@ -58,8 +63,8 @@ class Game(object):
                 return (x + position[0], y + position[1])
         return None
 
-    def find_image_center(self, screen, image, x=0, y=0, w=None, h=None):
-        return self.find_image(screen, image, x, y, w, h, center=True)
+    def find_image_center(self, screen, image, x=0, y=0, w=None, h=None, blackwhite=-1):
+        return self.find_image(screen, image, x, y, w, h, center=True, blackwhite=blackwhite)
 
     def move_to(self, x, y):
         ag.moveTo(x + self.x, y + self.y)
@@ -442,7 +447,7 @@ class CoinGetter(Game):
         print "process: RESULT"
         self.move_to(0, 0)
         time.sleep(0.1)
-        position = self.find_image_center(screen, self.images['restart'])
+        position = self.find_image_center(screen, self.images['restart'], 263, 255, 128, 44, blackwhite=100)
         if position != None:
             x, y = position
             self.move_to(x, y)
@@ -477,7 +482,7 @@ if __name__ == '__main__':
         #print game._process_play(screen)
         #coin = game.get_coin_image(screen)
         #coin.save('coin.png', 'PNG')
-        #print game._process_result(screen)
-        print game.adjust_state(screen)
+        print game._process_result(screen)
+        #print game.adjust_state(screen)
 
     main('../image_coingetter')
