@@ -268,7 +268,6 @@ class CoinGetter(Game):
     STATE_RESULT = 2
     WIDTH = 550
     HEIGHT = 447
-    RELOAD_BROWSER_COUNT = 200
     # key: 0=do nothing, 1=up, 2=right, 3=down, 4=left
     # updown: 0=down, 1=up
     ACTIONS = np.array([(key, pressed_duration) for key in [0, 1, 2, 3, 4] for pressed_duration in [0, 1]],
@@ -281,7 +280,6 @@ class CoinGetter(Game):
         self.images = {}
         self.random_count = 0
         self.adjust_state_count = 0
-        self.reload_browser_count = self.RELOAD_BROWSER_COUNT
         self.prev_coin = None
         self.prev_key = None
         self.level = 1
@@ -294,7 +292,7 @@ class CoinGetter(Game):
         self.ocr_tool = tools[0]
 
     def load_images(self, image_dir):
-        for name in ['start', 'restart', 'left_top', 'coin', 'title', 'game_over', 'levelup', 'level']:
+        for name in ['start', 'restart', 'left_top', 'coin', 'title', 'game_over', 'levelup', 'level', 'to_title']:
             self.images[name] = Image.open(os.path.join(image_dir, '{}.png'.format(name)))
 
     def get_number(self, screen, image, offset, size):
@@ -369,25 +367,6 @@ class CoinGetter(Game):
         else:
             return self._process_play(screen)
 
-    def reload_browser(self):
-        try:
-            # linux/win
-            ag.keyDown('ctrl')
-            ag.keyDown('r')
-            ag.keyUp('r')
-            ag.keyUp('ctrl')
-            # mac
-            ag.keyDown('command')
-            ag.keyDown('r')
-            ag.keyUp('r')
-            ag.keyUp('command')
-        finally:
-            pass
-        print 'waiting reload...',
-        time.sleep(2)
-        while self.detect_position() is None:
-            time.sleep(0.5)
-        print 'reloaded'
 
     def action_size(self):
         return len(self.ACTIONS)
@@ -424,8 +403,8 @@ class CoinGetter(Game):
             time.sleep(0.1)
             self.click()
             self.move_to(0, 0)
-            self.state = self.STATE_PLAY
-        return (None, False)
+            self.adjust_state_count -= 1
+        return None, False
 
     def _process_play(self, screen):
         print "process: PLAY",
@@ -450,13 +429,6 @@ class CoinGetter(Game):
         termination = (self.prev_coin != coin)
         reward = 100 if termination else -1
         self.prev_coin = coin
-        if not termination:
-            self.reload_browser_count -= 1
-        else:
-            self.reload_browser_count = self.RELOAD_BROWSER_COUNT
-        if self.reload_browser_count <= 0:
-            self.reload_browser()
-            self.reload_browser_count = self.RELOAD_BROWSER_COUNT
         return reward, termination
 
     def _process_result(self, screen):
@@ -464,7 +436,8 @@ class CoinGetter(Game):
         self.keyup_all()
         self.move_to(0, 0)
         time.sleep(0.1)
-        position = self.find_image_center(screen, self.images['restart'], 263, 255, 128, 44, blackwhite=100)
+        position = self.find_image_center(screen, self.images['to_title'], 167, 255, 128, 44, blackwhite=100)
+        #position = self.find_image_center(screen, self.images['restart'], 263, 255, 128, 44, blackwhite=100)
         if position != None:
             x, y = position
             self.move_to(x, y)
@@ -472,8 +445,8 @@ class CoinGetter(Game):
             self.click()
             time.sleep(0.1)
             self.move_to(0, 0)
-            self.state = self.STATE_PLAY
-        return (None, False)
+            self.adjust_state_count -= 1
+        return None, False
 
 
 if __name__ == '__main__':
@@ -502,6 +475,5 @@ if __name__ == '__main__':
         #print game._process_title(screen)
         #print game._process_result(screen)
         #print game.adjust_state(screen)
-        print game.reload_browser()
 
     main('../image_coingetter')
