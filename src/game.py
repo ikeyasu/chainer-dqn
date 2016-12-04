@@ -268,6 +268,7 @@ class CoinGetter(Game):
     STATE_RESULT = 2
     WIDTH = 550
     HEIGHT = 447
+    RELOAD_BROWSER_COUNT = 200
     # key: 0=do nothing, 1=up, 2=right, 3=down, 4=left
     # updown: 0=down, 1=up
     ACTIONS = np.array([(key, pressed_duration) for key in [0, 1, 2, 3, 4] for pressed_duration in [0, 1]],
@@ -280,6 +281,7 @@ class CoinGetter(Game):
         self.images = {}
         self.random_count = 0
         self.adjust_state_count = 0
+        self.reload_browser_count = self.RELOAD_BROWSER_COUNT
         self.prev_coin = None
         self.prev_key = None
         self.level = 1
@@ -358,7 +360,7 @@ class CoinGetter(Game):
         self.adjust_state_count -= 1
         if self.adjust_state_count <= 0:
             self.adjust_state(screen)
-            self.adjust_state_count = 10
+            self.adjust_state_count = 100
 
         if self.state == self.STATE_TITLE:
             return self._process_title(screen)
@@ -366,6 +368,26 @@ class CoinGetter(Game):
             return self._process_result(screen)
         else:
             return self._process_play(screen)
+
+    def reload_browser(self):
+        try:
+            # linux/win
+            ag.keyDown('ctrl')
+            ag.keyDown('r')
+            ag.keyUp('r')
+            ag.keyUp('ctrl')
+            # mac
+            ag.keyDown('command')
+            ag.keyDown('r')
+            ag.keyUp('r')
+            ag.keyUp('command')
+        finally:
+            pass
+        print 'waiting reload...',
+        time.sleep(2)
+        while self.detect_position() is None:
+            time.sleep(0.5)
+        print 'reloaded'
 
     def action_size(self):
         return len(self.ACTIONS)
@@ -428,6 +450,13 @@ class CoinGetter(Game):
         termination = (self.prev_coin != coin)
         reward = 100 if termination else -1
         self.prev_coin = coin
+        if not termination:
+            self.reload_browser_count -= 1
+        else:
+            self.reload_browser_count = self.RELOAD_BROWSER_COUNT
+        if self.reload_browser_count <= 0:
+            self.reload_browser()
+            self.reload_browser_count = self.RELOAD_BROWSER_COUNT
         return reward, termination
 
     def _process_result(self, screen):
@@ -470,8 +499,9 @@ if __name__ == '__main__':
         #print game._process_play(screen)
         #coin = game.get_coin_image(screen)
         #coin.save('coin.png', 'PNG')
-        print game._process_title(screen)
+        #print game._process_title(screen)
         #print game._process_result(screen)
         #print game.adjust_state(screen)
+        print game.reload_browser()
 
     main('../image_coingetter')
