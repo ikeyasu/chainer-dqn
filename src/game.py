@@ -342,11 +342,11 @@ class CoinGetter(Game):
         return None
 
     def adjust_state(self, screen):
-        position = self.find_image(screen, self.images['start'], 213, 382, 138, 44)
+        position = self.find_image(screen, self.images['start'], 213, 382, 138, 44, blackwhite=100)
         if position is not None:
             self.state = self.STATE_TITLE
             return self.state
-        position = self.find_image_center(screen, self.images['restart'], 263, 255, 128, 44)
+        position = self.find_image_center(screen, self.images['restart'], 263, 255, 128, 44, blackwhite=100)
         if position is not None:
             self.state = self.STATE_RESULT
             return self.state
@@ -407,7 +407,7 @@ class CoinGetter(Game):
         self.move_to(0, 0)
         self.click()
         time.sleep(0.1)
-        position = self.find_image_center(screen, self.images['start'])
+        position = self.find_image_center(screen, self.images['start'], 213, 382, 138, 44, blackwhite=100)
         if position is not None:
             x, y =  position
             self.move_to(x, y)
@@ -482,7 +482,8 @@ if __name__ == '__main__':
         #print game._process_play(screen)
         #coin = game.get_coin_image(screen)
         #coin.save('coin.png', 'PNG')
-        print game._process_result(screen)
+        print game._process_title(screen)
+        #print game._process_result(screen)
         #print game.adjust_state(screen)
 
     main('../image_coingetter')
